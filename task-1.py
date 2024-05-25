@@ -1,49 +1,20 @@
-import timeit
+from pulp import *
 
-def find_coins_greedy(amount):
-    coins = [50, 25, 10, 5, 2, 1]
-    result = {}
-    
-    for coin in coins:
-        if amount >= coin:
-            count = amount // coin
-            result[coin] = count
-            amount -= coin * count
-    
-    return result
+lemonade = LpVariable("Lemonade_units", lowBound=0, cat='Integer')
+fruit_juice = LpVariable("Fruit_juice_units", lowBound=0, cat='Integer')
 
-amount = 113
-greedy_result = find_coins_greedy(amount)
-print("Greedy result:", greedy_result)
+prob = LpProblem("Maximize_production", LpMaximize)
 
-def find_min_coins(amount):
-    coins = [1, 2, 5, 10, 25, 50]
-    min_coins = [0] + [float('inf')] * amount
-    coin_used = [0] * (amount + 1)
-    
-    for coin in coins:
-        for i in range(coin, amount + 1):
-            if min_coins[i - coin] + 1 < min_coins[i]:
-                min_coins[i] = min_coins[i - coin] + 1
-                coin_used[i] = coin
-    
-    result = {}
-    while amount > 0:
-        coin = coin_used[amount]
-        if coin in result:
-            result[coin] += 1
-        else:
-            result[coin] = 1
-        amount -= coin
-    
-    return result
+prob += lemonade + fruit_juice, "Total_production"
 
+prob += 2 * lemonade + fruit_juice <= 100, "Water_constraint"
+prob += lemonade <= 50, "Sugar_constraint"
+prob += lemonade <= 30, "Lemon_juice_constraint"
+prob += 2 * fruit_juice + lemonade <= 40, "Fruit_puree_constraint"
 
-dp_result = find_min_coins(amount)
-print("DP result:", dp_result)
+prob.solve()
 
-greedy_time = timeit.timeit(lambda: find_coins_greedy(amount), number=1000)
-print("Greedy algorithm time:", greedy_time)
-
-dp_time = timeit.timeit(lambda: find_min_coins(amount), number=1000)
-print("Dynamic programming algorithm time:", dp_time)
+print("Status:", LpStatus[prob.status])
+print("Total production:", value(prob.objective))
+print("Lemonade units:", value(lemonade))
+print("Fruit juice units:", value(fruit_juice))
